@@ -1,0 +1,73 @@
+# Replace: PRODUCT_NAME, PRODUCT_PORT, YOUR_NAMESPACE (e.g. bizbasics-myproduct)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: PRODUCT_NAME-api
+  namespace: YOUR_NAMESPACE
+  labels:
+    app: PRODUCT_NAME-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: PRODUCT_NAME-api
+  template:
+    metadata:
+      labels:
+        app: PRODUCT_NAME-api
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: "/metrics"
+        prometheus.io/port: "PRODUCT_PORT"
+    spec:
+      containers:
+        - name: PRODUCT_NAME-api
+          image: your-registry.example.com/PRODUCT_NAME-api:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: PRODUCT_PORT
+          envFrom:
+            - secretRef:
+                name: PRODUCT_NAME-secrets
+          env:
+            - name: PORT
+              value: "PRODUCT_PORT"
+            - name: AUTH_SERVICE_URL
+              value: "https://auth.bizbasics.ai"
+            - name: PLATFORM_API_URL
+              value: "https://api.bizbasics.ai"
+            - name: COOKIE_DOMAIN
+              value: "bizbasics.ai"
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "1000m"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: PRODUCT_PORT
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: PRODUCT_PORT
+            initialDelaySeconds: 5
+            periodSeconds: 10
+      imagePullSecrets:
+        - name: registry-credentials
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: PRODUCT_NAME-api
+  namespace: YOUR_NAMESPACE
+spec:
+  selector:
+    app: PRODUCT_NAME-api
+  ports:
+    - port: PRODUCT_PORT
+      targetPort: PRODUCT_PORT

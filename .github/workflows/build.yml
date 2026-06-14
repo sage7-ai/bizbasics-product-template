@@ -1,0 +1,42 @@
+# CI template — wire this to YOUR OWN registry and infra before enabling.
+#
+# Runs on manual dispatch only, so cloning the template doesn't produce a failed
+# run. By default it just builds the API image (no credentials needed). To push
+# on every commit:
+#   1. add a `push:` trigger,
+#   2. set REGISTRY_USERNAME / REGISTRY_PASSWORD repo secrets for YOUR registry
+#      (never the platform's), and
+#   3. uncomment the login + push steps below.
+# Deploy the image to your own cluster/host, then register your product's public
+# HTTPS endpoint with the platform — see https://bizbasics.io/docs.
+name: build
+
+on:
+  workflow_dispatch:
+
+env:
+  REGISTRY: your-registry.example.com # ← e.g. ghcr.io/your-org
+  IMAGE: PRODUCT_NAME-api
+
+jobs:
+  build-api:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build API image
+        run: |
+          docker build \
+            --build-arg GIT_SHA="${{ github.sha }}" \
+            -t "${REGISTRY}/${IMAGE}:${{ github.sha }}" \
+            -f api-service/Dockerfile api-service
+
+      # --- Enable push once you've set your own registry + secrets ---
+      # - name: Log in to your registry
+      #   uses: docker/login-action@v3
+      #   with:
+      #     registry: ${{ env.REGISTRY }}
+      #     username: ${{ secrets.REGISTRY_USERNAME }}
+      #     password: ${{ secrets.REGISTRY_PASSWORD }}
+      # - name: Push
+      #   run: docker push "${REGISTRY}/${IMAGE}:${{ github.sha }}"

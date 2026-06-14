@@ -1,0 +1,27 @@
+# Local dev compose for PRODUCT_NAME.
+# Assumes the bizbasics platform stack is running on the 'bizbasics' Docker network.
+# Start platform first: cd /path/to/bizbasics && docker compose up -d
+services:
+  PRODUCT_NAME-api:
+    build:
+      context: api-service
+    ports:
+      - "PRODUCT_PORT:PRODUCT_PORT"
+    environment:
+      PORT: "PRODUCT_PORT"
+      DATABASE_URL: "postgres://bizbasics:bizbasics@postgres:5432/bizbasics_dev?sslmode=disable&search_path=PRODUCT_NAME"
+      REDIS_URL: "redis://redis:6379/9"
+      AUTH_SERVICE_URL: "http://auth-service:8091"
+      PLATFORM_API_URL: "http://platform-api:8092"
+      COOKIE_DOMAIN: "localhost"
+      CORS_EXTRA_ORIGINS: "http://localhost:FRONTEND_PORT"
+    env_file: [".env"]
+    networks:
+      - bizbasics
+    depends_on:
+      - postgres
+      - redis
+
+networks:
+  bizbasics:
+    external: true
